@@ -3,28 +3,79 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Todo List</title>
+  <title>Taskly — Your daily todo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap"
+    rel="stylesheet"
+  />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="app">
-    <h1>My Todo List</h1>
+    <!-- Navbar -->
+    <nav class="navbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </span>
+        <span class="brand-name">Taskly</span>
+      </div>
+      <button class="theme-toggle" id="theme-toggle" aria-label="Toggle dark mode">
+        <span class="theme-icon">🌙</span>
+      </button>
+    </nav>
 
+    <!-- Greeting + date -->
+    <div class="hero">
+      <h1 id="greeting">Hello there 👋</h1>
+      <p class="date" id="current-date"></p>
+    </div>
+
+    <!-- Progress -->
+    <section class="progress-section">
+      <div class="progress-top">
+        <span class="progress-label">TODAY'S PROGRESS</span>
+        <span class="progress-percent" id="progress-percent">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+    </section>
+
+    <!-- Input -->
     <form id="todo-form" class="todo-form">
       <input
         type="text"
         id="todo-input"
         class="todo-input"
-        placeholder="What needs to be done?"
+        placeholder="What's on your mind today?"
         autocomplete="off"
       />
-      <button type="submit" class="add-btn">Add</button>
+      <button type="submit" class="add-btn" aria-label="Add task">+</button>
     </form>
+    <p class="hint">Press Enter to add</p>
 
+    <!-- List -->
     <ul id="todo-list" class="todo-list"></ul>
 
+    <!-- Footer -->
     <p id="todo-footer" class="todo-footer"></p>
   </main>
+
+  <!-- Celebration overlay (shown at 100%) -->
+  <div class="celebration" id="celebration" aria-hidden="true">
+    <div class="celebration-card">
+      <div class="celebration-emoji">🎉</div>
+      <h2>All Done!</h2>
+      <p>You've completed every task on your list. Time to relax.</p>
+      <button class="celebration-close" id="celebration-close">Awesome!</button>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>

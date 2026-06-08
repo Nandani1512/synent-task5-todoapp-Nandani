@@ -9,6 +9,139 @@ const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
 const list = document.getElementById("todo-list");
 const footer = document.getElementById("todo-footer");
+const dateEl = document.getElementById("current-date");
+const greetingEl = document.getElementById("greeting");
+const progressPercent = document.getElementById("progress-percent");
+const progressFill = document.getElementById("progress-fill");
+const themeToggle = document.getElementById("theme-toggle");
+const celebration = document.getElementById("celebration");
+const celebrationClose = document.getElementById("celebration-close");
+
+// Tracks completion state so the celebration fires only on the
+// transition into 100% (not on every render or on page load).
+let allDonePrev = false;
+let statsReady = false;
+
+// ===== Theme (dark / light) =====
+function applyTheme(theme) {
+  document.documentElement.setAttribute("data-theme", theme);
+  localStorage.setItem("theme", theme);
+  // Show the icon for the theme you can switch TO.
+  themeToggle.querySelector(".theme-icon").textContent =
+    theme === "dark" ? "☀️" : "🌙";
+}
+
+function initTheme() {
+  const saved = localStorage.getItem("theme");
+  const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+  applyTheme(saved || (prefersDark ? "dark" : "light"));
+}
+
+themeToggle.addEventListener("click", () => {
+  const current = document.documentElement.getAttribute("data-theme");
+  applyTheme(current === "dark" ? "light" : "dark");
+});
+
+// ===== Greeting based on time of day =====
+function renderGreeting() {
+  const hour = new Date().getHours();
+  let text = "Good evening 🌙";
+  if (hour < 12) text = "Good morning ☀️";
+  else if (hour < 17) text = "Good afternoon 👋";
+  greetingEl.textContent = text;
+}
+
+// ===== Show today's date (e.g. "Monday, 8 June") =====
+function renderDate() {
+  const now = new Date();
+  dateEl.textContent = now.toLocaleDateString("en-GB", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+}
+
+// ===== Confetti burst (fired when a task is completed) =====
+function spawnConfetti(x, y) {
+  const colors = ["#fb7185", "#f472b6", "#f9a8d4", "#fda4af", "#fbbf24", "#fb923c"];
+  for (let i = 0; i < 26; i++) {
+    const piece = document.createElement("div");
+    piece.className = "confetti-piece";
+    piece.style.left = x + "px";
+    piece.style.top = y + "px";
+    piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+    piece.style.setProperty("--dx", (Math.random() - 0.5) * 300 + "px");
+    piece.style.setProperty("--dy", (Math.random() - 0.65) * 300 + "px");
+    piece.style.setProperty("--rot", Math.random() * 720 - 360 + "deg");
+    document.body.appendChild(piece);
+    setTimeout(() => piece.remove(), 1000);
+  }
+}
+
+// ===== Celebration overlay (shown when everything is complete) =====
+function celebrationConfetti() {
+  const w = window.innerWidth;
+  const h = window.innerHeight;
+  const points = [
+    [w * 0.2, h * 0.3],
+    [w * 0.5, h * 0.22],
+    [w * 0.8, h * 0.3],
+  ];
+  // Two staggered waves for a fuller burst.
+  for (let wave = 0; wave < 2; wave++) {
+    points.forEach((p, i) => {
+      setTimeout(() => spawnConfetti(p[0], p[1]), wave * 350 + i * 120);
+    });
+  }
+}
+
+function showCelebration() {
+  celebration.classList.add("show");
+  celebration.setAttribute("aria-hidden", "false");
+  celebrationConfetti();
+}
+
+function hideCelebration() {
+  celebration.classList.remove("show");
+  celebration.setAttribute("aria-hidden", "true");
+}
+
+// Dismiss on button click or by clicking the dimmed backdrop.
+celebrationClose.addEventListener("click", hideCelebration);
+celebration.addEventListener("click", (e) => {
+  if (e.target === celebration) hideCelebration();
+});
+
+// ===== Update progress bar + footer count =====
+function updateStats() {
+  const total = todos.length;
+  const done = todos.filter((todo) => todo.completed).length;
+  const percent = total === 0 ? 0 : Math.round((done / total) * 100);
+
+  progressFill.style.width = percent + "%";
+  progressPercent.textContent = percent + "%";
+
+  // Celebrate when everything is complete.
+  const isComplete = total > 0 && done === total;
+  progressFill.classList.toggle("complete", isComplete);
+  progressPercent.classList.toggle("complete", isComplete);
+
+  // Big shout-out only on the transition into 100% (skip the first
+  // render so it doesn't pop on page load when already complete).
+  if (statsReady && isComplete && !allDonePrev) {
+    showCelebration();
+  }
+  allDonePrev = isComplete;
+  statsReady = true;
+
+  if (total === 0) {
+    footer.textContent = "";
+  } else if (isComplete) {
+    footer.innerHTML = "🎉 All done! Great job!";
+  } else {
+    footer.innerHTML = `<b>${done}</b> of <b>${total}</b> tasks completed`;
+  }
+}
 
 // ===== Persistence =====
 // Save the current todos array to localStorage.
@@ -35,9 +168,10 @@ function renderTodos() {
   if (todos.length === 0) {
     const empty = document.createElement("li");
     empty.className = "empty-state";
-    empty.textContent = "No tasks yet — add one above!";
+    empty.innerHTML =
+      '<span class="emoji">🗒️</span>No tasks yet — add your first one above!';
     list.appendChild(empty);
-    footer.textContent = "";
+    updateStats();
     return;
   }
 
@@ -46,7 +180,7 @@ function renderTodos() {
     li.className = "todo-item" + (todo.completed ? " completed" : "");
     li.dataset.id = todo.id;
 
-    // Circular check indicator — toggles completion.
+    // Check box indicator — toggles completion.
     const check = document.createElement("span");
     check.className = "todo-check";
     check.dataset.action = "toggle";
@@ -70,10 +204,8 @@ function renderTodos() {
     list.appendChild(li);
   });
 
-  // Footer count of tasks still to do.
-  const remaining = todos.filter((todo) => !todo.completed).length;
-  const taskWord = remaining === 1 ? "task" : "tasks";
-  footer.textContent = `${remaining} ${taskWord} left`;
+  // Refresh progress bar + footer count.
+  updateStats();
 }
 
 // ===== Add a task =====
@@ -119,6 +251,13 @@ list.addEventListener("click", (e) => {
   const id = Number(li.dataset.id);
 
   if (action === "toggle") {
+    // If this click will COMPLETE the task, celebrate with confetti.
+    const todo = todos.find((t) => t.id === id);
+    const willComplete = todo && !todo.completed;
+    if (willComplete) {
+      const rect = li.getBoundingClientRect();
+      spawnConfetti(rect.left + 26, rect.top + rect.height / 2);
+    }
     toggleTodo(id);
   } else if (action === "delete") {
     deleteTodo(id);
@@ -133,6 +272,9 @@ form.addEventListener("submit", (e) => {
   input.focus();
 });
 
-// Load any saved tasks, then render.
+// Initialize: theme, greeting, date, then load + render saved tasks.
+initTheme();
+renderGreeting();
+renderDate();
 loadTodos();
 renderTodos();
