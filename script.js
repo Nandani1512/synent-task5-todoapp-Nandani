@@ -2,15 +2,44 @@
 // Each todo: { id: Number, text: String, completed: Boolean }
 let todos = [];
 
+const STORAGE_KEY = "todos";
+
 // ===== DOM references =====
 const form = document.getElementById("todo-form");
 const input = document.getElementById("todo-input");
 const list = document.getElementById("todo-list");
+const footer = document.getElementById("todo-footer");
+
+// ===== Persistence =====
+// Save the current todos array to localStorage.
+function saveTodos() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(todos));
+}
+
+// Load todos from localStorage on startup (empty array if none / invalid).
+function loadTodos() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    todos = stored ? JSON.parse(stored) : [];
+  } catch {
+    todos = [];
+  }
+}
 
 // ===== Render =====
 // Rebuilds the visible list from the `todos` array.
 function renderTodos() {
   list.innerHTML = "";
+
+  // Empty state when there are no tasks.
+  if (todos.length === 0) {
+    const empty = document.createElement("li");
+    empty.className = "empty-state";
+    empty.textContent = "No tasks yet — add one above!";
+    list.appendChild(empty);
+    footer.textContent = "";
+    return;
+  }
 
   todos.forEach((todo) => {
     const li = document.createElement("li");
@@ -40,6 +69,11 @@ function renderTodos() {
     li.appendChild(del);
     list.appendChild(li);
   });
+
+  // Footer count of tasks still to do.
+  const remaining = todos.filter((todo) => !todo.completed).length;
+  const taskWord = remaining === 1 ? "task" : "tasks";
+  footer.textContent = `${remaining} ${taskWord} left`;
 }
 
 // ===== Add a task =====
@@ -53,6 +87,7 @@ function addTodo(text) {
     completed: false,
   });
 
+  saveTodos();
   renderTodos();
 }
 
@@ -61,12 +96,14 @@ function toggleTodo(id) {
   todos = todos.map((todo) =>
     todo.id === id ? { ...todo, completed: !todo.completed } : todo
   );
+  saveTodos();
   renderTodos();
 }
 
 // ===== Delete a task =====
 function deleteTodo(id) {
   todos = todos.filter((todo) => todo.id !== id);
+  saveTodos();
   renderTodos();
 }
 
@@ -96,5 +133,6 @@ form.addEventListener("submit", (e) => {
   input.focus();
 });
 
-// Initial render (empty for now).
+// Load any saved tasks, then render.
+loadTodos();
 renderTodos();
