@@ -6,6 +6,11 @@ Tasks are saved in the browser using `localStorage`, so they persist across page
 ## 🔗 Live Demo
 **[https://nandani1512.github.io/synent-task5-todoapp-Nandani/](https://nandani1512.github.io/synent-task5-todoapp-Nandani/)**
 
+## 📸 Preview
+| Light mode | Dark mode |
+|------------|-----------|
+| ![Taskly — light mode](screenshots/screenshot-light.png) | ![Taskly — dark mode](screenshots/screenshot-dark.png) |
+
 ## ✨ Features
 - Add a task (click **+** or press **Enter**)
 - Mark a task as completed
